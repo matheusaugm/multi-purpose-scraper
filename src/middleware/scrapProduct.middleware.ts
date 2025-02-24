@@ -4,16 +4,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { DomainConfiguration } from '../config/domain/domain.config';
 
 @Injectable()
 export class UrlValidationMiddleware implements NestMiddleware {
-  private readonly allowedDomains = [
-    'magazineluiza.com.br',
-    'pontofrio.com.br',
-    'casasbahia.com.br',
-    'amaro.com',
-    'webscraper.io',
-  ];
+  constructor(private readonly domainConfig: DomainConfiguration) {}
 
   use(req: Request, res: Response, next: NextFunction) {
     const url = req.params.url;
@@ -26,15 +21,18 @@ export class UrlValidationMiddleware implements NestMiddleware {
       const urlObject = new URL(url);
       const domain = this.extractDomain(urlObject.hostname);
 
-      if (!this.allowedDomains.some((allowed) => domain.includes(allowed))) {
-        throw new BadRequestException('Domain not supported');
+      if (!this.domainConfig.isDomainAllowed(domain)) {
+        throw new BadRequestException(
+          'Scraping is not allowed for this domain',
+        );
       }
 
       next();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new BadRequestException('Invalid URL format');
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
       }
+      throw new BadRequestException('Invalid URL format');
     }
   }
 

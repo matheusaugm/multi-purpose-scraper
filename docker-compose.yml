@@ -1,0 +1,15 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/opt/src
+      - ./node_modules:/opt/node_modules
+    environment:
+      - PUPPETEER_DOCKER=true
+      - MAX_HTML_SIZE=1000000
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4

@@ -1,59 +1,44 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Cache } from 'cache-manager';
-import { HttpService } from '@nestjs/axios';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { extractWebsiteData } from '../component/extractWebsiteData.component';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  InternalServerErrorException,
+  HttpException,
+} from '@nestjs/common';
+import { Scraper } from '../interfaces/scraper.interface';
+import { SCRAPER_TOKEN } from '../constants/tokens';
+import { CacheService } from './cacheService.service';
 
 @Injectable()
 export class ScrapProductService {
+  private readonly logger = new Logger(ScrapProductService.name);
+
   constructor(
-    private readonly httpService: HttpService,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
+    @Inject(SCRAPER_TOKEN) private readonly scraper: Scraper,
   ) {}
 
   async scrapProduct(url: string): Promise<ScrapResult> {
     try {
-      const cachedResults = await this.cacheManager.get<ScrapResult>(url);
-
-      // Check if URL exists in cache
+      const cachedResults = await this.cacheService.getScrapResult(url);
 
       if (cachedResults) {
         return cachedResults;
       }
 
-      // If not in cache, fetch new data
-      const productData = await this.fetchProductData(url);
-      await this.cacheManager.set(url, productData, 360000);
+      const productData = await this.scraper.extractWebsiteData(url);
+      await this.cacheService.setScrapResult(url, productData);
 
       return productData;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw error.cause;
+      this.logger.error(
+        `${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
       }
-      throw new Error('An unknown error occurred');
+      throw new InternalServerErrorException('An unknown error occurred');
     }
-  }
-
-  private async fetchProductData(url: string): Promise<ScrapResult> {
-    /* get title for magalu
-    * document.querySelector('[data-testid="heading-product-title"]').innerHTML
-      get price for magalu
-      * document.querySelector('[data-testid="price-value"]').innerText
-      * get image for magalu
-      * document.querySelector('[data-testid="image-selected-thumbnail"]').src
-      * get description for magalu
-      * document.querySelector('[data-testid="rich-content-container"]').innerText
-
-
-    * */
-    const test = await extractWebsiteData(url);
-    console.log(test);
-    return Promise.resolve({
-      title: 'Product Title',
-      image: 'https://example.com/image.jpg',
-      price: '100.00',
-      description: 'Product Description',
-      url: url,
-    });
   }
 }
