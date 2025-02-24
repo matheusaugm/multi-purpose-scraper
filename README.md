@@ -31,8 +31,8 @@ Este projeto é um web scraper desenvolvido com **NestJS** e **Puppeteer**. Ele 
 
 1. Clone o repositório:
     ```sh
-    git clone https://github.com/seu-usuario/seu-repositorio.git
-    cd seu-repositorio
+    git clone https://github.com/matheusaugm/multi-purpose-scraper.git multi-purpose-scraper
+    cd multi-purpose-scraper
     ```
 
 2. Construa a imagem Docker:
